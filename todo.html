@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>To-do</title>
+<style>
+:root{--bg:#f3f5f1;--surface:#fff;--ink:#1d2a24;--muted:#6b7a72;--line:#dde3dc;--accent:#2f6f57;--accent-ink:#fff;--danger:#b4432f;--hi:#b4432f;--med:#b7791f;--low:#4a7fa5;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141b17;--surface:#1c2621;--ink:#e6ede8;--muted:#8fa197;--line:#2b3832;--accent:#6fc3a0;--accent-ink:#0f1a15;--danger:#e2876f;--hi:#e2876f;--med:#e0b25c;--low:#7fb2d6}}
+:root[data-theme="dark"]{--bg:#141b17;--surface:#1c2621;--ink:#e6ede8;--muted:#8fa197;--line:#2b3832;--accent:#6fc3a0;--accent-ink:#0f1a15;--danger:#e2876f;--hi:#e2876f;--med:#e0b25c;--low:#7fb2d6}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;line-height:1.4}
+main{max-width:560px;margin:0 auto;padding:28px 16px 48px}
+h1{font-size:2rem;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:0 0 20px}
+.row{display:flex;gap:8px;margin-bottom:12px}
+input[type=text],input[type=search],input[type=date],select,textarea{font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);min-width:0;width:100%}
+.row input{flex:1}
+textarea{resize:vertical;min-height:90px}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;color:inherit}
+.primary{background:var(--accent);color:var(--accent-ink);padding:10px 18px;font-weight:600;white-space:nowrap}
+.ghost{background:transparent;border:1px solid var(--line);padding:10px 16px}
+.danger{background:transparent;color:var(--danger);border:1px solid var(--danger);padding:10px 16px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tabs{display:flex;gap:6px;margin:12px 0}
+.tab{background:transparent;color:var(--muted);padding:6px 12px;border:1px solid var(--line)}
+.tab[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+ul{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+li{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);border-left:4px solid transparent}
+li:last-child{border-bottom:0}
+li.p-high{border-left-color:var(--hi)}li.p-medium{border-left-color:var(--med)}li.p-low{border-left-color:var(--low)}
+li input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.body{flex:1;text-align:left;background:none;padding:2px 0;min-width:0}
+.title{display:block;word-break:break-word}
+.meta{display:block;color:var(--muted);font-size:.85rem;margin-top:2px}
+.overdue{color:var(--danger);font-weight:600}
+li.done .title{color:var(--muted);text-decoration:line-through}
+.del{background:transparent;color:var(--muted);padding:4px 8px;font-size:1.2rem}
+.del:hover{color:var(--danger)}
+.empty{padding:22px 14px;color:var(--muted);text-align:center;border-left:0}
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;color:var(--muted);font-size:.9rem}
+.link{background:none;color:var(--muted);text-decoration:underline;padding:4px}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);width:min(520px,calc(100% - 24px));padding:20px}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog label{display:block;font-size:.85rem;color:var(--muted);margin:12px 0 4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions{display:flex;justify-content:space-between;gap:8px;margin-top:18px}
+.actions div{display:flex;gap:8px}
+.stamp{color:var(--muted);font-size:.8rem;margin-top:12px}
+</style>
+</head>
+<body>
+<main>
+  <h1>To-do</h1>
+  <p class="sub" id="sub"></p>
+  <div class="row">
+    <input type="text" id="new" placeholder="Add a task" aria-label="New task" maxlength="200">
+    <button class="primary" id="addBtn">Add task</button>
+  </div>
+  <input type="search" id="q" placeholder="Search titles and notes" aria-label="Search tasks">
+  <div class="tabs" role="group" aria-label="Filter tasks">
+    <button class="tab" data-f="all" aria-pressed="true">All</button>
+    <button class="tab" data-f="active" aria-pressed="false">Active</button>
+    <button class="tab" data-f="done" aria-pressed="false">Done</button>
+  </div>
+  <select id="sort" aria-label="Sort tasks">
+    <option value="new">Sort: newest first</option>
+    <option value="due">Sort: due date</option>
+    <option value="pri">Sort: priority</option>
+  </select>
+  <ul id="list" style="margin-top:12px"></ul>
+  <div class="foot"><span id="count"></span><button class="link" id="clear">Clear completed</button></div>
+</main>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <h2 id="dlgTitle" style="margin:0 0 4px;font-size:1.2rem">Task details</h2>
+  <label for="eTitle">Title</label>
+  <input type="text" id="eTitle" maxlength="200">
+  <label for="eNotes">Notes</label>
+  <textarea id="eNotes" placeholder="Add details, links or steps"></textarea>
+  <div class="two">
+    <div><label for="eDue">Due date</label><input type="date" id="eDue"></div>
+    <div><label for="ePri">Priority</label>
+      <select id="ePri"><option value="none">None</option><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div>
+  </div>
+  <label><input type="checkbox" id="eDone" style="width:auto;accent-color:var(--accent)"> Mark as done</label>
+  <div class="stamp" id="stamp"></div>
+  <div class="actions">
+    <button class="danger" id="eDel">Delete task</button>
+    <div><button class="ghost" id="eCancel">Cancel</button><button class="primary" id="eSave">Save changes</button></div>
+  </div>
+</dialog>
+
+<script>
+const $=id=>document.getElementById(id);
+let tasks=[],filter="all",editing=null;
+try{tasks=JSON.parse(localStorage.getItem("todo-tasks")||"[]")||[]}catch(e){tasks=[]}
+tasks=tasks.map((t,i)=>({id:t.id||Date.now()+"-"+i,text:t.text||"",notes:t.notes||"",due:t.due||"",pri:t.pri||"none",done:!!t.done,created:t.created||Date.now()}));
+function save(){try{localStorage.setItem("todo-tasks",JSON.stringify(tasks))}catch(e){}}
+const today=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const fmt=s=>new Date(s+"T00:00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"});
+const rank={high:0,medium:1,low:2,none:3};
+function visible(){
+  const q=$("q").value.trim().toLowerCase(),s=$("sort").value;
+  let r=tasks.filter(t=>(filter==="all"||(filter==="done")===t.done)&&(!q||(t.text+" "+t.notes).toLowerCase().includes(q)));
+  if(s==="due")r.sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999"));
+  else if(s==="pri")r.sort((a,b)=>rank[a.pri]-rank[b.pri]);
+  else r.sort((a,b)=>b.created-a.created);
+  return r;
+}
+function render(){
+  const list=$("list");list.innerHTML="";
+  const shown=visible();
+  if(!shown.length){
+    const li=document.createElement("li");li.className="empty";
+    li.textContent=tasks.length?"No tasks match.":"No tasks yet. Add your first one above.";
+    list.appendChild(li);
+  }
+  shown.forEach(t=>{
+    const li=document.createElement("li");
+    li.className=(t.done?"done ":"")+"p-"+(t.pri==="none"?"x":t.pri);
+    const cb=document.createElement("input");cb.type="checkbox";cb.checked=t.done;
+    cb.setAttribute("aria-label","Mark done: "+t.text);
+    cb.onchange=()=>{t.done=cb.checked;save();render()};
+    const b=document.createElement("button");b.className="body";
+    b.setAttribute("aria-label","Open task: "+t.text);
+    const ti=document.createElement("span");ti.className="title";ti.textContent=t.text;
+    b.appendChild(ti);
+    const parts=[];
+    if(t.due){const o=!t.done&&t.due<today();parts.push('<span class="'+(o?"overdue":"")+'">'+(o?"Overdue · ":"Due ")+fmt(t.due)+"</span>")}
+    if(t.pri!=="none")parts.push(t.pri+" priority");
+    if(t.notes)parts.push("has notes");
+    if(parts.length){const m=document.createElement("span");m.className="meta";m.innerHTML=parts.join(" · ");b.appendChild(m)}
+    b.onclick=()=>openEdit(t);
+    const d=document.createElement("button");d.className="del";d.textContent="×";
+    d.setAttribute("aria-label","Delete: "+t.text);
+    d.onclick=()=>{if(confirm("Delete this task?")){tasks=tasks.filter(x=>x!==t);save();render()}};
+    li.append(cb,b,d);list.appendChild(li);
+  });
+  const left=tasks.filter(t=>!t.done).length;
+  $("count").textContent=left+(left===1?" task left":" tasks left");
+  $("sub").textContent=tasks.length?tasks.length-left+" of "+tasks.length+" done":"Start with one thing.";
+  $("clear").style.visibility=tasks.some(t=>t.done)?"visible":"hidden";
+}
+function add(){
+  const v=$("new").value.trim();if(!v)return;
+  tasks.unshift({id:Date.now()+"",text:v,notes:"",due:"",pri:"none",done:false,created:Date.now()});
+  $("new").value="";save();render();$("new").focus();
+}
+function openEdit(t){
+  editing=t;
+  $("eTitle").value=t.text;$("eNotes").value=t.notes;$("eDue").value=t.due;$("ePri").value=t.pri;$("eDone").checked=t.done;
+  $("stamp").textContent="Created "+new Date(t.created).toLocaleString();
+  $("dlg").showModal();
+}
+$("eSave").onclick=()=>{
+  const v=$("eTitle").value.trim();
+  if(!v){$("eTitle").focus();return}
+  Object.assign(editing,{text:v,notes:$("eNotes").value,due:$("eDue").value,pri:$("ePri").value,done:$("eDone").checked});
+  save();render();$("dlg").close();
+};
+$("eCancel").onclick=()=>$("dlg").close();
+$("eDel").onclick=()=>{if(confirm("Delete this task?")){tasks=tasks.filter(x=>x!==editing);save();render();$("dlg").close()}};
+$("addBtn").onclick=add;
+$("new").addEventListener("keydown",e=>{if(e.key==="Enter")add()});
+$("q").oninput=render;$("sort").onchange=render;
+$("clear").onclick=()=>{tasks=tasks.filter(t=>!t.done);save();render()};
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+  filter=b.dataset.f;
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  render();
+});
+render();
+</script>
+</body>
+</html>
